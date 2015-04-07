@@ -1,0 +1,722 @@
+%% LyX 2.0.4 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass[11pt,oneside,english]{amsart}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{geometry}
+\geometry{verbose, margin = 1in}
+\usepackage{amsthm}
+\usepackage{tikz}
+\usepackage{array}
+\usetikzlibrary{arrows}
+\usepackage{amsfonts}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{multicol}
+
+\setlength{\parskip}{0.5pc}
+
+
+\makeatletter
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Textclass specific LaTeX commands.
+\numberwithin{equation}{section}
+\numberwithin{figure}{section}
+\theoremstyle{plain}
+\newtheorem{thm}{\protect\theoremname}
+  \theoremstyle{definition}
+  \newtheorem{defn}[thm]{\protect\definitionname}
+  \theoremstyle{plain}
+  \newtheorem{lem}[thm]{\protect\lemmaname}
+  \setlength\parindent{0pt}
+  \newtheorem{assumpt}{\protect \assumptionname}
+  \theoremstyle{plain}
+  \newtheorem{inv}{\protect \invariantname}
+
+\makeatother
+
+\usepackage{babel}
+  \providecommand{\definitionname}{Definition}
+  \providecommand{\lemmaname}{Lemma}
+  \providecommand{\theoremname}{Theorem}
+  \providecommand{\assumptionname}{Assumption}
+  \providecommand{\invariantname}{Invariant}
+
+\definecolor{lightgray}{RGB}{240, 240, 240}
+\definecolor{mediumgray}{RGB}{220, 220, 220}
+
+\begin{document}
+
+\title{Treasure Hunting}
+\author{Casey O'Brien (cmobrien@mit.edu)}
+
+
+\maketitle
+
+Our goal is to solve the collaborative search on the plane problem. In this problem, there are $k$ identical agents, initially located at the origin, and a treasure located Manhattan distance $D$ from the origin. Their goal is to locate the treasure as efficiently as possible, both in terms of $D$ and $k$. 
+
+The agents all move synchronously. In a single time step, an agent can take one step to the north, east, south, or west, or stay in the same location. Our goal is to develop an algorithm for the agents to locate the treasure in the optimal time, $O(D + D^2/k)$, when the agents have only weak capabilities. Specifically, our agents will only have constant memory, and very limited communcation abilities. The only communication allowed will be \textit{loneliness detection}, which means that when an agent is in a cell, it knows whether or not it is alone. Additionally, the agents will be able to sense whether their current cell is the origin.
+
+\section{Getting Started}
+
+To begin, we will make two assumptions about the agents capabilities which do not fit into our model. We will describe an algorithm which will allow the agents to locate the treasure under these assumptions. Then, we will show how we can lift the assumptions.
+
+\begin{assumpt} The agents are broken into teams of five, and each agent knows its role within its team.
+\end{assumpt}
+
+\begin{assumpt} Each agent knows whether or not it belongs to the first team.
+\end{assumpt}
+
+\begin{assumpt}All the agents begin at the origin. At time $8i$, team $i$ leaves the origin and begins to execute the algorithm.
+\end{assumpt}
+
+\subsection{Exploring Levels}
+
+Define \textit{level $d$} to be the set of all cells which are exactly $d$ steps from the origin. The general idea behind the algorithm is that search teams will concurrently search different levels, starting from level 0 and making their way outwards. Once a team finishes searching a level, it will move outwards again and explored the next unexplored level.
+
+In order for this algorithm to work, the agents will have coordinate with each other very carefully. To do this, each agent of a search team is assigned one of five roles: the explorer, or the north, east, south, or west guide.
+
+\begin{figure}
+\begin{tabular}{c c}
+\begin{subfigure}[b]{.5\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (5,2) rectangle (6,3);
+\fill[mediumgray] (4,3) rectangle (5,4);
+\fill[mediumgray] (6,3) rectangle (7,4);
+\fill[mediumgray] (3,4) rectangle (4,5);
+\fill[mediumgray] (7,4) rectangle (8,5);
+\fill[mediumgray] (2,5) rectangle (3,6);
+\fill[mediumgray] (8,5) rectangle (9,6);
+\fill[mediumgray] (5,8) rectangle (6,9);
+\fill[mediumgray] (4,7) rectangle (5,8);
+\fill[mediumgray] (6,7) rectangle (7,8);
+\fill[mediumgray] (3,6) rectangle (4,7);
+\fill[mediumgray] (7,6) rectangle (8,7);
+
+\draw [help lines] (0,0) grid (11, 11);
+\node(g1) at (2.5, 5.5){$G$};
+\node(g2) at (5.5, 8.5){$G$};
+\node(g3) at (5.5, 2.5){$G$};
+\node(g4) at (8.5, 5.5){$G$};
+\node(e) at (2.5, 6.5){$E$};
+\draw  (2.75, 6.5)
+    -- (3.5, 6.5)
+    -- (3.5, 7.5)
+    -- (4.5, 7.5)
+    -- (4.5, 8.5)
+    -- (5.5, 8.5)
+    % At north guide
+    -- (6.5, 8.5)
+    -- (6.5, 7.5)
+    -- (7.5, 7.5)
+    -- (7.5, 6.5)
+    -- (8.5, 6.5)
+    -- (8.5, 5.5)
+    % At east guide
+    -- (8.5, 4.5)
+    -- (7.5, 4.5)
+    -- (7.5, 3.5)
+    -- (6.5, 3.5)
+    -- (6.5, 2.5)
+    -- (5.5, 2.5)
+    % At south guide
+    -- (4.5, 2.5)
+    -- (4.5, 3.5)
+    -- (3.5, 3.5)
+    -- (3.5, 4.5)
+    -- (2.5, 4.5)
+    -- (2.5, 5.25);
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+&
+\begin{subfigure}[b]{0.5\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (5,1) rectangle (6,2);
+\fill[mediumgray] (4,2) rectangle (5,3);
+\fill[mediumgray] (6,2) rectangle (7,3);
+\fill[mediumgray] (3,3) rectangle (4,4);
+\fill[mediumgray] (7,3) rectangle (8,4);
+\fill[mediumgray] (2,4) rectangle (3,5);
+\fill[mediumgray] (8,4) rectangle (9,5);
+\fill[mediumgray] (1,5) rectangle (2,6);
+\fill[mediumgray] (9,5) rectangle (10,6);
+\fill[mediumgray] (5,9) rectangle (6,10);
+\fill[mediumgray] (4,8) rectangle (5,9);
+\fill[mediumgray] (6,8) rectangle (7,9);
+\fill[mediumgray] (3,7) rectangle (4,8);
+\fill[mediumgray] (7,7) rectangle (8,8);
+\fill[mediumgray] (2,6) rectangle (3,7);
+\fill[mediumgray] (8,6) rectangle (9,7);
+\draw [help lines] (0,0) grid (11, 11);
+\node(g1) at (2.5, 5.5){$G$};
+\node(g2) at (5.5, 8.5){$G$};
+\node(g3) at (5.5, 2.5){$G$};
+\node(g4) at (8.5, 5.5){$G$};
+\node(e) at (2.5, 6.5){$E$};
+\draw  (2.75, 6.5)
+    -- (3.5, 6.5)
+    -- (3.5, 7.5)
+    -- (4.5, 7.5)
+    -- (4.5, 8.5)
+    -- (5.5, 8.5)
+    % At north guide
+    -- (6.5, 8.5)
+    -- (6.5, 7.5)
+    -- (7.5, 7.5)
+    -- (7.5, 6.5)
+    -- (8.5, 6.5)
+    -- (8.5, 5.5)
+    % At east guide
+    -- (8.5, 4.5)
+    -- (7.5, 4.5)
+    -- (7.5, 3.5)
+    -- (6.5, 3.5)
+    -- (6.5, 2.5)
+    -- (5.5, 2.5)
+    % At south guide
+    -- (4.5, 2.5)
+    -- (4.5, 3.5)
+    -- (3.5, 3.5)
+    -- (3.5, 4.5)
+    -- (2.5, 4.5)
+    -- (2.5, 5.25);
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+\end{tabular}
+\caption{TEST}
+\end{figure}
+
+Say that a search team is going to explore level $d$. The guides will position themselves on their corresponding axis exactly $d$ steps from the origin, and the explorer positions himself one cell above the west guide. Now, in order to explore level $d$, the explorer begins by alternating taking steps to the east and north, until it reaches the north guide, at which point it begins alternating taking steps to the east and south until it reaches the east guide, and so on. After $8d - 1$ steps, the agent will have reached the west guide, and all cells at level $d$ will have been explored. Figure 1.1(a) shows an example of the path of the explorer for $d = 3$, where the cells at level 3 are highlighted.
+
+In fact, we note that all cells at level $d + 1$ will have also been explored, except for those lying exactly one step further from the origin than the guides. To demonstrate this point, Figure 1.1(b) shows the path of an explorer who is exploring level 3, with the level 4 cells highlighted. Soon we will see that these cells along the axes will be explored by the guides, and so it is unnecessary to have any team explore level $d + 1$. As a result, we only need to designate a search team to explore every other level.
+
+\subsection{Progression}
+
+Now we need to make sure that the guides use only constant memory. As described above, the guides need to move $d$ steps from the origin before the search at level $d$ can begin. In order to do this using only a constant amount of memory, the guides will make use of guides from other search teams.
+
+The algorithm begins with the first team exploring level 2. At time $t = 0$, the explorer takes a step along the west axis. At time $t = 1$, the explorer takes another step, and all the guides begin walking out along their respective axes. Once the explorer reaches the cell $(-2, 0)$, it takes a step upwards. After this step, the team is in position to begin exploration of level 2, and the explorer proceeds to search the level as described above.
+
+While the first team is exploring level 2, at $t = 8$ the second team proceeds to explore level 4. As before, the explorer leads the west guide out along the west axis, and all other guides walk out in sync with the west guide. These agents are not actually aware that they are the second team (they only know that they are not the first team), so we need a strategy to let the agents know when to begin exploring a level.
+
+Once the agents leave the origin, they walk until they reach an empty cell an even distance from the origin. This corresponds to the inner-most level which has yet to be explored. So, once the team reaches this point, they can begin exploration of that level.
+
+All subsequent teams then follow the same pattern. Since we have $k/5$ teams, this will result in the first $2k/5$ levels being explored. However, if the treasure still has not been located, we need a way for the agents to continue searching.
+
+To handle this, we want to make the teams move outwards and find a new level to search once they have finished searching their current level. Consider the first team, right after it finishes searching level 2. Once the team finishes searching, the entire team can move outwards as they had before, again stopping once they find an unoccupied even cell.
+
+Consider a new team which leaves the origin after the inner-most teams have already moved outwards to start exploring new levels. We wouldn't want this new team to mistakenly search one of the inner levels that has already been searched. As a result, we have the new team walk until it locates another team. After that point, it settles in to search the first level where there are no guides.
+
+The issue with having teams move outwards after the explorer finishes is that there is no way for the north, east, and south guides to know exactly when the explorer has gotten all the way back to the west guide. However, we note that this isn't actually necessary. The north guide can begin its move outwards as soon as the explorer passes by it (and the same for the east and south guides). Since the explorer and west guide will begin their move outwards after the other guides, we know that those guides will be in place by the time the explorer reaches them when searching the new level.
+
+It remains to explain how the guides know when the explorer passes them. For now, lets just consider the north guide. The east and south guides will be treated symmetrically (although we will see that the west guide is different). There are three situations in which one of these guides might find another agent in their cell while they are waiting for their explorer:
+
+\begin{enumerate}
+
+\item Their explorer is passing them.
+
+\item The north guide from a new team is passing them.
+
+\item The north guide from a team moving outwards to explore a different level is passing them.
+
+\end{enumerate}
+
+Recall that north guides are emitted from the origin every 8 steps. We also know that there will be a large gap between two teams moving outwards to explore a new level, because even if they started exploring at the same time, the inner team out finish many steps sooner. We can utilize these facts to make the north guide ``recognize'' its explorer. If a north guide ever experiences three consecutive time steps where it is not alone, at least one of those time steps must have consisted of the explorer passing.
+
+To utilize this fact, whenever the explorer reaches the north guide, it waits there for four time steps (in fact, only three are necessary, but we want to maintain that the explorer takes an even number of steps before it reaches the west guide. We'll see later why this is important). This way, if the north guide is ever not alone for at least four time steps, it knows that its explorer has visited.
+
+The north guide should not begin its move outwards until it senses it is alone, because if two north guides moved outwards at the same time, they would never stop. However, the north guide can only possibly be not alone for at most six time steps, so he will still make his move outwards in plenty of time.
+
+Now, we must consider the west guide. When the explorer reaches the west guide again, we want them to move outwards together, with the explorer one step ahead of the west guide. If we use the same strategy as we did for the other guides, we could end up in a situation where the explorer and west guide are separated by other set of explorers and west guides. The result would be two explorers, followed by two west guides, which would result in two explorers exploring the same level.
+
+The solve this problem, we will ensure that our algorithm maintains the following invariant.
+
+\begin{inv} During any odd time step, all west guides have an even $x$ coordinate.
+\end{inv}
+
+Recall that at time $8i$, the explorer from team $i$ leaves the origin, and at time $8i + 1$, the guides from team $i$ leave the origin. So, we can clearly see that this invariant holds while the west guides are making their initial move out along the west axis. Any guide waiting for its explorer to search a level is positioned on an even cell, so the invariant is clearly satisfied during the time.
+
+It remains to show that a guide moving outwards after its team has already explored a level follows this invariant. We have yet to describe how the west guide and explorer initiate their move outwards after exploring a level.
+
+The tricky thing here is that it is important that the west guide knows exactly when the explorer returns. The north guide, for example, can't tell the difference between an explorer passing directly followed by another north guide, and a north guide passing directly followed by the explorer.
+
+To rememdy this, we slightly alter the behavior of the west guide. Say that a west guide has just reached its position and the explorer has just left. Then, the explorer and west guide from another team pass by the west guide. At that point, the original west guide should take a step south, so that it sits just below the west axis.
+
+This won't change anything for any new teams moving out into position, because after the first team is deployed there will always be at least one west guide sitting on the west axis, and so teams will still start searching at the appropriate new levels. Now, the west guide knows when its explorer returns because no other agent could be at that position directly below the west axis.
+
+We have already argued that the explorer takes an even number of steps to get back to the west axis. Since the explorer is one step ahead of the west guide walking out along the west axis, it starts its exploration on an even time step. Thus, we know that the time step in which the explorer reaches its west guide below the axis is an odd time step.
+
+In the next time step, we have the explorer move one step to the left, so that it sits next to its guide below the axis on an even time step. Then, together, they take a step up so that they are on the west axis (resulting in an odd time step).
+
+Due to the invariant, if the guide is not alone at this point, it must be in the cell with another guide. Since explorers and guides always walk one after another, the explorer must also find itself with another explorer. Thus, they can wait two time steps for that team to pass, and then they can follow. Figure 1.2 shows an example where a team finishing its search enounters another team and needs to wait for it to pass.
+
+It's possible that there are two teams walking in a row, in which case they may need to wait four time steps. Either way, they always wait an even number of steps before they begin moving, so they preserve the invariant.
+
+If the explorer and guide find themselves alone when they return to the west axis, they know that their teammate must be alone as well, so they can begin their westward walk immediately.
+
+With this argument, we can see that the invariant is preserved across all possible scenarios.
+
+%To remedy this, we propose the following solution. Say that some explorer has just started exploring, and the west guide is waiting for the explorer to return. In the meantime, some other explorer/west guide pair pass by the west guide. At this point, the west guide takes one step south. Then, when the explorer reaches the west guide, it knows that they are sitting just below the west axis. The explorer takes one step to the left, and then both the explorer and the west guide step upwards onto the west axis. The explorer then waits one time step, and after that it begins its outward walk as soon as it finds itself alone. The west guide begins its westward walk as soon as it has been alone for two consecutive time steps.
+
+%It is certainly not immediately clear why this procedure guarantees that the explorer and west guide walk outwards together. At first glance, it seems as if one of them could be alone in a time step while the other one was not, resulting in one advancing and leaving the other behind. The key to why this never happens is subtle. We know that teams are only ever emitted from the origin on even time steps. Similarly, we have designed our algorithm so that when explorers and west guides move outwards, they follow the same parity. As a result, at the point when an explorer returns and is sharing a cell with its west guide, it is only possible for west guides to be at even x-coordinates.
+
+%The troublesome situation is when the explorer and guide return to the west axis together and find themselves on top of another team which is moving outwards. As a result of the parity argument above, there is only one possible scenario in which the explorer and west guide will encounter another team moving outwards, and it is the scenario where both of them re-enter the west axis to find that cell occupied. This scenario is demonstrated in Figure xx. As we can see from the figure, the returning team will follow the other team outwards along the axis, as desired.
+
+\begin{figure}
+\centering
+\begin{multicols}{2}
+\begin{subfigure}[b]{8.1cm}
+\centering
+\begin{tikzpicture}[scale=0.8]
+
+\filldraw[ultra thin, lightgray] (0,1) rectangle (9,2);
+\draw [help lines] (0,0) grid (9, 2);
+
+\node(e1) at (5.3, 0.3){\textcolor{blue}{$E$}};
+\node(g1) at (5.7, 0.7){\textcolor{blue}{$G$}};
+\node(e2) at (6.5, 1.5){\textcolor{red}{$E$}};
+\node(g2) at (7.5, 1.5){\textcolor{red}{$G$}};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+
+\begin{subfigure}[b]{8.1cm}
+\centering
+\begin{tikzpicture}[scale=0.8]
+
+\filldraw[ultra thin, lightgray] (0,1) rectangle (9,2);
+\draw [help lines] (0,0) grid (9, 2);
+\node(e1) at (4.5, 0.5){\textcolor{blue}{$E$}};
+\node(g1) at (5.5, 0.5){\textcolor{blue}{$G$}};
+\node(e2) at (5.5, 1.5){\textcolor{red}{$E$}};
+\node(g2) at (6.5, 1.5){\textcolor{red}{$G$}};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+
+\begin{subfigure}[b]{8.1cm}
+\centering
+\begin{tikzpicture}[scale=0.8]
+
+\filldraw[ultra thin, lightgray] (0,1) rectangle (9,2);
+\draw [help lines] (0,0) grid (9, 2);
+\node(e1) at (4.3, 1.3){\textcolor{blue}{$E$}};
+\node(g1) at (5.3, 1.3){\textcolor{blue}{$G$}};
+\node(e2) at (4.7, 1.7){\textcolor{red}{$E$}};
+\node(g2) at (5.7, 1.7){\textcolor{red}{$G$}};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+
+\begin{subfigure}[b]{8.1cm}
+\centering
+\begin{tikzpicture}[scale=0.8]
+
+\filldraw[ultra thin, lightgray] (0,1) rectangle (9,2);
+\draw [help lines] (0,0) grid (9, 2);
+\node(e1) at (4.3, 1.3){\textcolor{blue}{$E$}};
+\node(g1) at (5.5, 1.5){\textcolor{blue}{$G$}};
+\node(e2) at (3.5, 1.5){\textcolor{red}{$E$}};
+\node(g2) at (4.7, 1.7){\textcolor{red}{$G$}};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+
+\begin{subfigure}[b]{8.1cm}
+\centering
+\begin{tikzpicture}[scale=0.8]
+
+\filldraw[ultra thin, lightgray] (0,1) rectangle (9,2);
+\draw [help lines] (0,0) grid (9, 2);
+\node(e1) at (4.5, 1.5){\textcolor{blue}{$E$}};
+\node(g1) at (5.5, 1.5){\textcolor{blue}{$G$}};
+\node(e2) at (2.5, 1.5){\textcolor{red}{$E$}};
+\node(g2) at (3.5, 1.5){\textcolor{red}{$G$}};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+
+\begin{subfigure}[b]{8.1cm}
+\centering
+\begin{tikzpicture}[scale=0.8]
+
+\filldraw[ultra thin, lightgray] (0,1) rectangle (9,2);
+\draw [help lines] (0,0) grid (9, 2);
+\node(e1) at (3.5, 1.5){\textcolor{blue}{$E$}};
+\node(g1) at (4.5, 1.5){\textcolor{blue}{$G$}};
+\node(e2) at (1.5, 1.5){\textcolor{red}{$E$}};
+\node(g2) at (2.5, 1.5){\textcolor{red}{$G$}};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+\end{multicols}
+
+\caption{}
+\end{figure}
+
+At this point, we have an algorithm which will locate the treasure under the two original assumptions. We will hold off on analyzing the runtime of the algorithm until we have described the entire algorithm. In the following section, we describe how to modify the algorithm so it works even when we lift the assumptions.
+
+\section{Lifting Assumptions}
+
+Now, we describe how to lift our assumptions. First, we describe an addition to the algorithm which allow us to lift assumptions 1 and 3. We will do this by having the agents perform a routine before they begin executing the algorithm described in the previous section. This routine will be broken into two phases. In phase I, agents will essentially line up to enter phase II. In phase II, the agents will determine their roles for the rest of the algorithm.
+
+First, we introduce a new definition. Define the point $(1, 1)$ to be the \textit{center}. Instead of centering our search around the origin, we will center it around the center (soon we will see why this is necessary). We will redefine level $d$ to be the set of points exactly $d$ steps from the center. Since the center is two steps from the origin, this means that we will need to search all the way through level $D + 2$ in order to ensure that the agents have located the treasure.
+
+\subsubsection{Phase I} To begin, in the first time step, we have all agents move one step to the left, to the position (-1, 0). Now, each time step, we have the agents move to the left with probability 1/2 (and otherwise stay in the same cell). Once an agent finds itself alone in a cell, it takes a step to the right every time step until it reaches the origin. For reasons we will see later, we only want an agent returning to the origin at most once every other time step. Thus, during this phase, the agents will move only on even time steps. When an agent returns to the origin, they enter phase II.
+
+
+
+\begin{figure}
+\footnotesize
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (3, 4) rectangle (4, 5);
+\fill[mediumgray] (4, 3) rectangle (5, 4);
+\fill[mediumgray] (3, 2) rectangle (4, 3);
+\fill[mediumgray] (2, 3) rectangle (3, 4);
+\draw [help lines] (0,0) grid (7, 7);
+\node(o) at (2.5, 4.5) {$O$};
+\node(c) at (3.5, 3.5) {$C$};
+\draw  (2.75, 4.5)
+    -- (3.5, 4.5)
+    -- (4.5, 4.5)
+    -- (4.5, 3.5)
+    -- (4.5, 2.5)
+    -- (3.5, 2.5)
+    -- (2.5, 2.5)
+    -- (2.5, 3.5);
+
+\end{tikzpicture}
+\caption{}
+\end{figure}
+
+\subsubsection{Phase II} Once the agents get back to the origin (which they can recognize, because this is one of their limited abilities), they follow the path outlined in Figure 2.1. Say that an agent takes the first step past the origin and finds itself alone. This will indicate to the agent that it is going to be a north agent. We want the next four agents that pass to know that they are not meant to be north agents. So, that agent will wait until it has been passed by four other agents. For any agent who passes that square and finds itself not alone, it will know it is not a north agent and continue moving along the path.
+
+Once the designated north agent has been passed by four agents, it knows that the rest of its team has passed, and begins to walk north. At this point, the north agent behaves exactly like a north agent emitted from the origin in the original algorithm in Section xx.
+
+The east and south agents are designated the same way. If an agent reaches the cell directly to the right of the center and finds it unoccupied, it knows it will become an east agent and waits for three other agents to pass before moving outwards. If an agent reaches the cell directly south of the center and finds it unoccupied, it knows it will become a south agent and waits for two other agents to pass.
+
+The west agent is slightly different. If an agent reaches the cell to the left of the center and finds it unoccupied, it knows it will become the west agent. However, it waits a single time step before moving outwards. This is because of the explorer.
+
+As soon as an agent reaches the step to the left of the center and finds it occupied, that agent knows it is an explorer, and it takes a step to the left in the next time step. By waiting a single extra time step, the west guide ensures that it does not walk out on top of the explorer, in which case neither could sense if they were in the presence of other agents. Note that because agents only return to the origin every other time step, it is impossible for another agent to encounter a west agent while the agent is waiting that extra time step before moving westwards.
+
+Figure 2.2 shows a sample execution of phase II on five agents. Since phase I involved randomness, we display an execution where we assume that the agents executed phase I in such a way that they end up entering the origin exactly once every other time step.
+
+
+\begin{figure}
+\footnotesize
+
+\begin{multicols}{3}
+\begin{subfigure}[b]{.3\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (2, 4) rectangle (3, 5);
+\draw [help lines] (0,0) grid (7, 7);
+\node(1) at (2.5, 4.5){$A$};
+\node(2) at (1.5, 4.5){$B$};
+\node(3) at (0.5, 4.5){$C$};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+\begin{subfigure}[b]{.3\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (2, 4) rectangle (3, 5);
+\draw [help lines] (0,0) grid (7, 7);
+\node(a) at (3.5, 4.5){$A$};
+\node(b) at (2.5, 4.5){$B$};
+\node(c) at (1.5, 4.5){$C$};
+\node(d) at (0.5, 4.5){$D$};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+
+\begin{subfigure}[b]{.3\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (2, 4) rectangle (3, 5);
+\draw [help lines] (0,0) grid (7, 7);
+\node(a) at (3.7, 4.7){$A$};
+\node(b) at (3.3, 4.3){$B$};
+\node(c) at (2.5, 4.5){$C$};
+\node(d) at (1.5, 4.5){$D$};
+\node(e) at (0.5, 4.5){$E$};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+
+\begin{subfigure}[b]{.3\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (2, 4) rectangle (3, 5);
+\draw [help lines] (0,0) grid (7, 7);
+\node(a) at (3.7, 4.7){$A$};
+\node(b) at (4.5, 3.5){$B$};
+\node(c) at (3.3, 4.3){$C$};
+\node(d) at (2.5, 4.5){$D$};
+\node(e) at (1.5, 4.5){$E$};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+
+\begin{subfigure}[b]{.3\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (2, 4) rectangle (3, 5);
+\draw [help lines] (0,0) grid (7, 7);
+\node(a) at (3.7, 4.7){$A$};
+\node(b) at (4.7, 3.7){$B$};
+\node(c) at (4.3, 3.3){$C$};
+\node(d) at (3.3, 4.3){$D$};
+\node(e) at (2.5, 4.5){$E$};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+
+\begin{subfigure}[b]{.3\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (2, 4) rectangle (3, 5);
+\draw [help lines] (0,0) grid (7, 7);
+\node(a) at (3.7, 4.7){$A$};
+\node(b) at (4.7, 3.7){$B$};
+\node(c) at (3.5, 2.5){$C$};
+\node(d) at (4.3, 3.3){$D$};
+\node(e) at (3.3, 4.3){$E$};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+
+\begin{subfigure}[b]{.3\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (2, 4) rectangle (3, 5);
+\draw [help lines] (0,0) grid (7, 7);
+\node(a) at (3.5, 5.5){$A$};
+\node(b) at (4.7, 3.7){$B$};
+\node(c) at (3.7, 2.7){$C$};
+\node(d) at (3.3, 2.3){$D$};
+\node(e) at (4.3, 3.3){$E$};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+\begin{subfigure}[b]{.3\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (2, 4) rectangle (3, 5);
+\draw [help lines] (0,0) grid (7, 7);
+\node(a) at (3.5, 5.5){$A$};
+\node(b) at (5.5, 3.5){$B$};
+\node(c) at (3.7, 2.7){$C$};
+\node(d) at (2.5, 3.5){$D$};
+\node(e) at (3.3, 2.3){$E$};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+
+\begin{subfigure}[b]{.3\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (2, 4) rectangle (3, 5);
+\draw [help lines] (0,0) grid (7, 7);
+\node(a) at (3.5, 5.5){$A$};
+\node(b) at (5.5, 3.5){$B$};
+\node(c) at (3.5, 1.5){$C$};
+\node(d) at (2.7, 3.7){$D$};
+\node(e) at (2.3, 3.3){$E$};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+
+\begin{subfigure}[b]{.3\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (2, 4) rectangle (3, 5);
+\draw [help lines] (0,0) grid (7, 7);
+\node(a) at (3.5, 5.5){$A$};
+\node(b) at (5.5, 3.5){$B$};
+\node(c) at (3.5, 1.5){$C$};
+\node(d) at (2.5, 3.5){$D$};
+\node(e) at (1.5, 3.5){$E$};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+
+\begin{subfigure}[b]{.3\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (2, 4) rectangle (3, 5);
+\draw [help lines] (0,0) grid (7, 7);
+\node(a) at (3.5, 5.5){$A$};
+\node(b) at (5.5, 3.5){$B$};
+\node(c) at (3.5, 1.5){$C$};
+\node(d) at (1.5, 3.5){$D$};
+\node(e) at (1.5, 4.5){$E$};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+
+\begin{subfigure}[b]{.3\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (2, 4) rectangle (3, 5);
+\draw [help lines] (0,0) grid (7, 7);
+\node(a) at (3.5, 5.5){$A$};
+\node(b) at (5.5, 3.5){$B$};
+\node(c) at (3.5, 1.5){$C$};
+\node(d) at (1.5, 3.5){$D$};
+\node(e) at (2.5, 4.5){$E$};
+
+\end{tikzpicture}
+\caption{}
+\end{subfigure}
+
+\end{multicols}
+
+\caption{TEST}
+\end{figure}
+
+We are left with a final issue of dealing with the fact that currently, we need the agents to know whether they are the first team to leave the origin. In Figure 2.2, we see that the guides all stop exactly two steps from the center, and the explorer begins searching level 2. However, they must know that they are the first team in order to do that. Recall that agents from every subsequent team walk away from the origin until they find an empty even cell \textit{after} having passed by another agent. Of course, the first team cannot do this because they will never encounter another agent and therefore walk on forever.
+
+To handle this, we introduce another phase to the algorithm above, which we'll call phase X. To tell our agents when to enter phase X, we need to modify the end of phase I slightly. If an agent reaches the origin and finds itself alone, it immediately enters phase X (to be described shortly). If an agent enters the origin and is not alone, it immediately enters phase II. 
+
+Phase X is very similar to phase II. The agents will walk along a predetermined course. If they find themselves alone in certain cells, they will stop and wait there until some condition indicates to them that they can move forward. Figure xx shows that path that agents execute in Phase X. As in Figure xx, the gray cells show the ones in which agents stop in if they find themselves there alone.
+
+
+\begin{figure}
+\footnotesize
+\centering
+\begin{tikzpicture}[scale=0.7]
+
+\fill[mediumgray] (3, 5) rectangle (4, 6);
+\fill[mediumgray] (5, 3) rectangle (6, 4);
+\fill[mediumgray] (3, 1) rectangle (4, 2);
+\fill[mediumgray] (0, 3) rectangle (2, 4);
+\draw [help lines] (0,0) grid (7, 7);
+\node(o) at (2.5, 4.5) {$O$};
+\node(c) at (3.5, 3.5) {$C$};
+\draw  (2.5, 4.5)
+    -- (2.5, 5.5)
+    -- (3.5, 5.5)
+    -- (4.5, 5.5)
+    -- (5.5, 5.5)
+    -- (5.5, 4.5)
+    -- (5.5, 3.5)
+    -- (5.5, 2.5)
+    -- (5.5, 1.5)
+    -- (4.5, 1.5)
+    -- (3.5, 1.5)
+    -- (2.5, 1.5)
+    -- (1.5, 1.5)
+    -- (1.5, 2.5)
+    -- (0.5, 2.5)
+    -- (0.5, 3.5)
+    -- (1.5, 3.5)
+    -- (1.5, 4.5)
+    -- (2.5, 4.5);
+
+\end{tikzpicture}
+\caption{}
+\end{figure}
+
+Some agents may complete this path (after passing all five gray cells and finding them occupied) and return to the origin. Once a phase X agent returns to the origin, it remains there for the remainder of the algorithm. As soon as at least one phase X agent return to the origin, all other agents that are still in phase I will enter phase II after reaching the origin.
+
+At most 13 agents can ever enter phase X by the time one of those agents returns to the origin and agents start to enter phase II. As we will see, the five agents stopped in the gray spots will later form a search team, so this means that there will be at most 8 agents who return to the origin and never leave again.
+
+Now, when a team enters phase II, it can just assume that it is not the first team. This is because all phase X agents will still be positioned in their gray spots, and so even the first team will pass by them and know that they can search the next unoccupied level.
+
+The problem is once the agents start completing their levels and moving outwards. If there are still agents in phases I and II at that time, we do not want them to re-search early levels after seeing phase X agents. So, we actually just want the phase X agents to be in position until at least one team has passed them.
+
+We remedy this as follows. When the first phase II team begins to move outwards, it will counter agents at level 2. Only phase X agents will ever be stopped there, so it will know the agents are phase X agents. The phase II agents will then wait in the cells with the phase II agents for an extra time step before proceeding.
+
+A phase X agent will never find its cell occupied for more than one time step in a row until this point, because agents can only enter phase X every other time step. As a result, this will signal to the phase X agents that they can abandon their posts and begin searching themselves.
+
+The first team out of phase II will step and begin searching level 4. Once the phase X team has received notification this this has happened, they can move outwards and begin searching level 6. At this point, that team will behave exactly like a normal search team.
+
+Note that all level 1, 2, and 3 cells are either searched by phase II or phase X agents, or lie on an axis and are searched by guides, so there's no need to ever have a team explore these levels. We have to be careful because no agent ever actually explores the center. To remedy this, we just have all the agents move to the center and back to the origin before beginning phase I.
+
+\section{Analysis}
+
+\begin{thm}
+\textsc{Rectangle-Search} locates the treasure in $O(D + D^2/k + \log{k})$ with high probability.
+\end{thm}
+
+\begin{proof}
+First, we need to analyze the rate at which agents complete Phase I. To do so, we use the following lemma.
+
+\begin{lem}
+After $t$ time steps, $\Omega(t - \log{k})$ agents have completed phase I with high probability.
+\end{lem}
+
+\begin{proof}
+Still need to work this out exactly. The general idea is that is takes $O(\log{k})$ steps for one of the agents to become alone, and after that happens we expect roughly one agent to become alone every time step. Very roughly.
+\end{proof}
+
+Next, we assess the time until one of the Phase X agents return to the origin (which marks the point at which Phase I agents start moving into Phase II). As we've stated before, at most 13 agents can enter Phase X before one of them winds up back at the origin. Once the last agent enters phase X, it will take at most a constant number of steps before some phase X agent reaches the origin. Thus, by Lemma xx, we expect this to happen in $O(\log{k})$.
+
+Recall that once a team leaves the origin, it searches the nearest unexplored level, and then immediately moves outwards to search the next nearest unexplored level. Recall that there are $k/5$ teams. Instead of our current algorithm, imagine if we just had the teams split up the levels so that each team explored every $2k/5^{th}$ level. So we would have team 1 explore levels $2$, $2k/5 + 2$ , $4k/5 + 2$, $\hdots$, team 2 explore levels $4$, $2k/5 + 4$, $4k/5 + 4$, etc., so that team $k/5$ would explore levels $2k/5$, $4k/5$, $6k/5$.
+
+We claim that this algorithm would be strictly slower than our algorithm at covering all levels through level $D + 2$. This is because in our algorithm, we always search level $d$ before anyone searches level $d + 1$. In the suggested algorithm, team $1$ could be searching some level way past level $D + 2$ while there are still levels before $D + 2$ waiting to be searched.
+
+However, this algorithm is still useful to consider, because we claim that it operates asymptotically equally to the desired time, yet it is simpler to analyze. So, we will show that this algorithm works in the desired time, and then claim that our algorithm does as well.
+
+
+
+
+
+\end{proof}
+
+
+
+
+\end{document}
