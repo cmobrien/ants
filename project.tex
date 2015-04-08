@@ -58,7 +58,9 @@ The agents all move synchronously. In a single time step, an agent can take one 
 
 \section{Getting Started}
 
-To begin, we will make two assumptions about the agents capabilities which do not fit into our model. We will describe an algorithm which will allow the agents to locate the treasure under these assumptions. Then, we will show how we can lift the assumptions.
+To begin, we will make three assumptions about the agent's capabilities which do not fit into our model. In this section, we will describe an algorithm, \textsc{Rectangle-Search} which will allow the agents to locate the treasure under these assumptions. Then, in section 2, we will show how we can lift the assumptions. In Section 3, we will analyze the runtime of the algorithm.
+
+\subsection{Assumptions} We make the following assumptions.
 
 \begin{assumpt} The agents are broken into teams of five, and each agent knows its role within its team.
 \end{assumpt}
@@ -66,7 +68,7 @@ To begin, we will make two assumptions about the agents capabilities which do no
 \begin{assumpt} Each agent knows whether or not it belongs to the first team.
 \end{assumpt}
 
-\begin{assumpt}All the agents begin at the origin. At time $8i$, team $i$ leaves the origin and begins to execute the algorithm.
+\begin{assumpt}All the agents begin at the origin. At time $12i$, team $i$ leaves the origin and begins to execute the algorithm.
 \end{assumpt}
 
 \subsection{Exploring Levels}
@@ -201,15 +203,15 @@ Now we need to make sure that the guides use only constant memory. As described 
 
 The algorithm begins with the first team exploring level 2. At time $t = 0$, the explorer takes a step along the west axis. At time $t = 1$, the explorer takes another step, and all the guides begin walking out along their respective axes. Once the explorer reaches the cell $(-2, 0)$, it takes a step upwards. After this step, the team is in position to begin exploration of level 2, and the explorer proceeds to search the level as described above.
 
-While the first team is exploring level 2, at $t = 8$ the second team proceeds to explore level 4. As before, the explorer leads the west guide out along the west axis, and all other guides walk out in sync with the west guide. These agents are not actually aware that they are the second team (they only know that they are not the first team), so we need a strategy to let the agents know when to begin exploring a level.
+While the first team is exploring level 2, at $t = 12$ the second team begins to execute the algorithm. As before, the explorer leads the west guide out along the west axis, and all other guides walk out in sync with the west guide. These agents are not actually aware that they are the second team (they only know that they are not the first team), so we need a strategy to let the agents know when to stop walking outwards and begin exploring a level.
 
-Once the agents leave the origin, they walk until they reach an empty cell an even distance from the origin. This corresponds to the inner-most level which has yet to be explored. So, once the team reaches this point, they can begin exploration of that level.
+Once the agents leave the origin, they walk until they reach an empty cell an even distance from the origin. This corresponds to the inner-most even level which has yet to be explored. So, once the team reaches this point, they can begin exploration of that level.
 
-All subsequent teams then follow the same pattern. Since we have $k/5$ teams, this will result in the first $2k/5$ levels being explored. However, if the treasure still has not been located, we need a way for the agents to continue searching.
+All subsequent teams then follow the same pattern. Since we have $\lfloor k/5 \rfloor$ teams, this will result in the first roughly $\lfloor 2k/5 \rfloor$ levels being explored. However, if the treasure still has not been located, we need a way for the agents to continue searching.
 
 To handle this, we want to make the teams move outwards and find a new level to search once they have finished searching their current level. Consider the first team, right after it finishes searching level 2. Once the team finishes searching, the entire team can move outwards as they had before, again stopping once they find an unoccupied even cell.
 
-Consider a new team which leaves the origin after the inner-most teams have already moved outwards to start exploring new levels. We wouldn't want this new team to mistakenly search one of the inner levels that has already been searched. As a result, we have the new team walk until it locates another team. After that point, it settles in to search the first level where there are no guides.
+Consider a new team which leaves the origin after the inner-most teams have already moved outwards to start exploring new levels. We wouldn't want this new team to mistakenly search one of the inner levels that has already been searched. As a result, we have the new team walk until it locates another team. After that point, it settles in to search the first even level that no team is currently exploring.
 
 The issue with having teams move outwards after the explorer finishes is that there is no way for the north, east, and south guides to know exactly when the explorer has gotten all the way back to the west guide. However, we note that this isn't actually necessary. The north guide can begin its move outwards as soon as the explorer passes by it (and the same for the east and south guides). Since the explorer and west guide will begin their move outwards after the other guides, we know that those guides will be in place by the time the explorer reaches them when searching the new level.
 
@@ -225,20 +227,20 @@ It remains to explain how the guides know when the explorer passes them. For now
 
 \end{enumerate}
 
-Recall that north guides are emitted from the origin every 8 steps. We also know that there will be a large gap between two teams moving outwards to explore a new level, because even if they started exploring at the same time, the inner team out finish many steps sooner. We can utilize these facts to make the north guide ``recognize'' its explorer. If a north guide ever experiences three consecutive time steps where it is not alone, at least one of those time steps must have consisted of the explorer passing.
+Recall that north guides are emitted from the origin every 12 steps. We also know that there will be a large gap between two teams moving outwards to explore a new level, because even if they started exploring at the same time, the inner team would finish many steps sooner. We can utilize these facts to make the north guide ``recognize'' its explorer. If a north guide ever experiences three consecutive time steps where it is not alone, at least one of those time steps must have consisted of the explorer passing.
 
 To utilize this fact, whenever the explorer reaches the north guide, it waits there for four time steps (in fact, only three are necessary, but we want to maintain that the explorer takes an even number of steps before it reaches the west guide. We'll see later why this is important). This way, if the north guide is ever not alone for at least four time steps, it knows that its explorer has visited.
 
-The north guide should not begin its move outwards until it senses it is alone, because if two north guides moved outwards at the same time, they would never stop. However, the north guide can only possibly be not alone for at most six time steps, so he will still make his move outwards in plenty of time.
+The north guide should not begin its move outwards until it senses it is alone, because if two north guides moved outwards at the same time, they would never stop, because they would never be alone. However, the north guide can only possibly be not alone for at most six time steps (four from the explorer, and one from each type of north guide), so he will still make his move outwards long before the explorer begins its outward move.
 
-Now, we must consider the west guide. When the explorer reaches the west guide again, we want them to move outwards together, with the explorer one step ahead of the west guide. If we use the same strategy as we did for the other guides, we could end up in a situation where the explorer and west guide are separated by other set of explorers and west guides. The result would be two explorers, followed by two west guides, which would result in two explorers exploring the same level.
+Now, we must consider the west guide. When the explorer reaches the west guide again, we want them to move outwards together, with the explorer one step ahead of the west guide. If we use the same strategy as we did for the other guides, we could end up in a situation where the explorer and west guide are separated by another set of explorers and west guides. The result would be two explorers, followed by two west guides, which would result in two explorers exploring the same level.
 
 The solve this problem, we will ensure that our algorithm maintains the following invariant.
 
 \begin{inv} During any odd time step, all west guides have an even $x$ coordinate.
 \end{inv}
 
-Recall that at time $8i$, the explorer from team $i$ leaves the origin, and at time $8i + 1$, the guides from team $i$ leave the origin. So, we can clearly see that this invariant holds while the west guides are making their initial move out along the west axis. Any guide waiting for its explorer to search a level is positioned on an even cell, so the invariant is clearly satisfied during the time.
+Recall that at time $12i$, the explorer from team $i$ leaves the origin, and at time $12i + 1$, the guides from team $i$ leave the origin. So, we can clearly see that this invariant holds while the west guides are making their initial move out along the west axis. Any guide waiting for its explorer to search a level is positioned on an even cell, so the invariant is clearly satisfied during the time.
 
 It remains to show that a guide moving outwards after its team has already explored a level follows this invariant. We have yet to describe how the west guide and explorer initiate their move outwards after exploring a level.
 
@@ -369,7 +371,7 @@ With this argument, we can see that the invariant is preserved across all possib
 \caption{}
 \end{figure}
 
-At this point, we have an algorithm which will locate the treasure under the two original assumptions. We will hold off on analyzing the runtime of the algorithm until we have described the entire algorithm. In the following section, we describe how to modify the algorithm so it works even when we lift the assumptions.
+At this point, we have an algorithm which will locate the treasure under the three original assumptions. We will hold off on analyzing the runtime of the algorithm until we have described the entire algorithm. In the following section, we describe how to modify the algorithm so it works even when we lift the assumptions.
 
 \section{Lifting Assumptions}
 
@@ -695,7 +697,7 @@ Note that all level 1, 2, and 3 cells are either searched by phase II or phase X
 First, we need to analyze the rate at which agents complete Phase I. To do so, we use the following lemma.
 
 \begin{lem}
-After $t$ time steps, $\Omega(t - \log{k})$ agents have completed phase I with high probability.
+After $O(t + \log{k})$ time steps, at least $t$ agents have completed phase I with high probability.
 \end{lem}
 
 \begin{proof}
@@ -704,15 +706,73 @@ Still need to work this out exactly. The general idea is that is takes $O(\log{k
 
 Next, we assess the time until one of the Phase X agents return to the origin (which marks the point at which Phase I agents start moving into Phase II). As we've stated before, at most 13 agents can enter Phase X before one of them winds up back at the origin. Once the last agent enters phase X, it will take at most a constant number of steps before some phase X agent reaches the origin. Thus, by Lemma xx, we expect this to happen in $O(\log{k})$.
 
-Recall that once a team leaves the origin, it searches the nearest unexplored level, and then immediately moves outwards to search the next nearest unexplored level. Recall that there are $k/5$ teams. Instead of our current algorithm, imagine if we just had the teams split up the levels so that each team explored every $2k/5^{th}$ level. So we would have team 1 explore levels $2$, $2k/5 + 2$ , $4k/5 + 2$, $\hdots$, team 2 explore levels $4$, $2k/5 + 4$, $4k/5 + 4$, etc., so that team $k/5$ would explore levels $2k/5$, $4k/5$, $6k/5$.
+Define team $0$ to be the team which is formed in \textit{Phase X}, and define team $i$ to be the $i^{th}$ team formed in phase \textit{II}. Next, we will define team $j$ to be the last team which exits \textit{Phase I}. Since the agents move in synchrony, the runtime of the algorithm is equal to the number of steps before team $j$ stops searching.
 
-We claim that this algorithm would be strictly slower than our algorithm at covering all levels through level $D + 2$. This is because in our algorithm, we always search level $d$ before anyone searches level $d + 1$. In the suggested algorithm, team $1$ could be searching some level way past level $D + 2$ while there are still levels before $D + 2$ waiting to be searched.
+\begin{lem} We must have that $j = O(D)$.
+\end{lem}
 
-However, this algorithm is still useful to consider, because we claim that it operates asymptotically equally to the desired time, yet it is simpler to analyze. So, we will show that this algorithm works in the desired time, and then claim that our algorithm does as well.
+\begin{proof}
+Even if each team only explored a single level, the $D/2^{th}$ team would end up exploring level $D$. After $O(D)$ time steps, that team would complete exploration of level $D$ and the algorithm would terminate. Since at most one team can start per time step, this leads to $j = O(D)$. 
+\end{proof}
+
+Let $m$ be the maximum number of possible teams that can be formed from the $k$ agents. Recall that at least $1$ and at most $8$ agents will complete \textit{Phase X} and then return to the origin to never leave again. So, we have that $\lfloor (k - 8)/5 \rfloor \leq m \leq \lfloor (k - 1)/5 \rfloor$, and $m = \Theta(k)$.
+
+We analyze two cases. In the first case, $j = m$. This corresponds to the case where $D$ is large compared to $k$, so all possible teams are deployed and join the search before the treasure is found. In the second case, $j < m$. This corresponds to the case where $D$ is small compared to $k$, so the treasure is located before all the teams are deployed.
+
+\begin{lem} If $j = m$, then the algorithm terminates after $O(D + D^2/k)$ steps with high probability.
+\end{lem}
+
+\begin{proof}
+This means that $D$ was large enough such that all the agents completed \textit{Phase I} and participated in the search. By Lemma xx, it takes $O(k + \log{k}) = O(k)$ with high probability before team $k/5$ completes \textit{Phase I}. After that, the team moves out to find the first unexplored level. Say that the first unexplored level it finds is level $f_j$.
+
+Once there, the team explores that level. Recall that it takes $O(d)$ steps to explore level $d$. So, in $O(f_j)$ steps, the team explores level $f_j$. Next, they move out and explore the next unexplored level, which will be level $f_j + 2m$. After exploring that level, they'll move out and explore level $f_j + 4m$. This process can repeat at most $D/2m$ times. So, the total amount of work is given by the following sum.
+
+\[f_j + \sum_{z = 0}^{D/(2m)} O(f_j + z \cdot (2m)) + m\]
+\[= f_j + O \left (\sum_{z = 0}^{D/k} f_j + zk \right )\]
+\[= f_j + O \left (\sum_{z = 0}^{D/k} f_j + k\sum_{z = 0}^{D/k} z \right ) \]
+\[= f_j + O((D/k)\cdot f_j + D^2/k)\]
+
+To simplify this further, we claim that $f_j = O(D)$. To see why, we note that if $f_j > D$, then it means that by the time that team $j$ starts its search, some other team is already searching level $D$. That team will complete its search within $O(D)$ steps of the time when team $j$ begins its search, so team $j$ cannot possibly start a search further than $O(D)$ steps from the origin. With this in mind, the above sum simplifies to
+
+\[= O(D + D^2/k + D^2/k) = O(D + D^2/k)\]
+
+With this, the total time before the algorithm terminates is
+\[O(D + D^2/k + k).\]
+By Lemma xx, $k = O(D)$, so we have that the overall runtime is given by $O(D + D^2/k)$ with high probability.
+\end{proof}
+
+\begin{lem} If $j < m$, then the algorithm terminates after $O(D + \log{k})$ steps with high probability.
+\end{lem}
+
+\begin{proof}
+This means that not all teams completed \textit{Phase I} by the time that some team located the treasure.
+
+We know that team $j + 1$ never completes \textit{Phase I}, because the algorithm terminates before this. By Lemma xx, this team would have completed \textit{Phase I} in $O(j + \log{k})$ time steps with high probability. Thus, the algorithm completes in $O(j + \log{k})$ with high proability. Then by Lemma xx, the algorithm completes in $O(D + \log{k})$ with high probability.
+\end{proof}
+
+Combining Lemmas xx and xx, we have that the algorithm terminates in $O(D + D^2/k + \log{k})$ with high probability.
+
+%Let us consider the total time some team spends in \textit{Phase III}. Once a team enters \textit{Phase III}, it has to walk until it discovers the first level that it is going to search. Say that the first level searched by team $i$ is level $f_i$.
+
+%Next the team searches that level. Recall that it takes $O(d)$ steps to search level $d$. Once the team completes that level, it walks out to the next unexplored level. At most, there are $k/5$ teams out searching at once. Since teams only search every other level, this means that the furthest a team will ever have to walk to reach the next level it wants to search is $2k/5$.
+
+%Recall that once a team leaves the origin, it searches the nearest unexplored level, and then immediately moves outwards to search the next nearest unexplored level. Recall that there are $k/5$ teams. Instead of our current algorithm, imagine if we just had the teams split up the levels so that each team explored every $2k/5^{th}$ level. So we would have team 1 explore levels $2$, $2k/5 + 2$ , $4k/5 + 2$, $\hdots$, team 2 explore levels $4$, $2k/5 + 4$, $4k/5 + 4$, etc., so that team $k/5$ would explore levels $2k/5$, $4k/5$, $6k/5$.
+
+%We claim that this algorithm would be strictly slower than our algorithm at covering all levels through level $D + 2$. This is because in our algorithm, we always search level $d$ before anyone searches level $d + 1$. In the suggested algorithm, team $1$ could be searching some level way past level $D + 2$ while there are still levels before $D + 2$ waiting to be searched.
+
+%However, this algorithm is still useful to consider, because we claim that it operates asymptotically equally to the desired time, yet it is simpler to analyze. So, we will show that this algorithm works in the desired time, and then claim that our algorithm does as well.
 
 
-
-
+%Consider some team $i$. It first explores distance $i$. Next, it explores distance $i + k/5$, because it walks past all other search teams before beginning its next exploration. It continues this process until the treasure is found, which will happen by the time some team explores distance $D$. The total number of distances that any one team can explore until this happens is $D/(k/5)$. Finally, using the fact that an explorer takes $8d$ steps to explore distance $d$, we see that the total number of steps some \textit{explorer} spends exploring is
+%\begin{equation*}
+%\begin{split}
+%\sum_{z = 0}^{D/(k/5)} 8 \left (i +  z \cdot \left (\frac{k}{5} \right )\right)
+%&= O \left ( \sum_{z = 0}^{D/k} i + zk \right )\\
+%&= O \left ( \sum_{z = 0}^{D/k} i + k\cdot \sum_{z = 0}^{D/k} z \right )\\
+%&= O(D + D^2/k)
+%\end{split}
+%\end{equation*}
+%Thus, the total number of steps spent by team $i$ is $O(D + D^2/k + i + \log{k})$ with high probability. We make the final note that $i = O(D + D^2/k)$. To see why, we can see that even if we had an unlimited number of search teams and we were able to start a new search team every step, the total number of search teams started before the treasure was found would be no more than the total number of steps taken to find the treasure. With this in mind, the total number of steps to find the treasure is $O(D + D^2/k + \log{k})$ with high probability.
 
 \end{proof}
 
