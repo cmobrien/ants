@@ -56,9 +56,17 @@ Our goal is to solve the collaborative search on the plane problem. In this prob
 
 The agents all move synchronously. In a single time step, an agent can take one step to the north, east, south, or west, or stay in the same location. Our goal is to develop an algorithm for the agents to locate the treasure in the optimal time, $O(D + D^2/k)$, when the agents have only weak capabilities. Specifically, our agents will only have constant memory, and very limited communcation abilities. The only communication allowed will be \textit{loneliness detection}, which means that when an agent is in a cell, it knows whether or not it is alone. Additionally, the agents will be able to sense whether their current cell is the origin.
 
-\section{Getting Started}
+\section{Introduction}
 
-To begin, we will make three assumptions about the agent's capabilities which do not fit into our model. In this section, we will describe an algorithm, \textsc{Rectangle-Search} which will allow the agents to locate the treasure under these assumptions. Then, in section 2, we will show how we can lift the assumptions. In Section 3, we will analyze the runtime of the algorithm.
+We will describe the algorithm \textsc{Rectangle-Search}. It consists of three phases. The first phase is the \textit{Separation Phase}. This is the only probabilistic phase. In this phase, the agents work to become alone in a cell, so that they can then make use of their loneliness detection ability.
+
+The second phase is the \textit{Allocation Phase}. In this phase, the agents divide up into teams of five, and each agent is assigned a role within its team. The final phase is the \textit{Search Phase}. In this phase, the agents actually begin to search the plane for the treasure by collectively searching from the origin outwards.
+
+Since the \textit{Search Phase} comprises the majority of the algorithm, we will describe it first, in Section 2. In Section 3, we will describe the \textit{Separation Phase}, and in Section 4 we will describe the \textit{Allocation Phase}.
+
+\section{Search Phase}
+
+Since the \textit{Separation} and \textit{Allocation Phases} actually happen before the \textit{Search} phase in \textit{Rectangle-Search}, we will need to make some assumptions about the behavior of the agents entering the \textit{Search Phase} before we can proceed to describe this phase. In later sections, we will see how the early phases actually allow these assumptions to be valid.
 
 \subsection{Assumptions} We make the following assumptions.
 
@@ -68,12 +76,12 @@ To begin, we will make three assumptions about the agent's capabilities which do
 \begin{assumpt} Each agent knows whether or not it belongs to the first team.
 \end{assumpt}
 
-\begin{assumpt}All the agents begin at the origin. At time $12i$, team $i$ leaves the origin and begins to execute the algorithm.
+\begin{assumpt} All the agents begin at the origin. A search team can leave the origin on any even time step at least twelve steps after the previous team left. The second search team must leave the origin before the first search team completes exploring level 2.
 \end{assumpt}
 
 \subsection{Exploring Levels}
 
-Define \textit{level $d$} to be the set of all cells which are exactly $d$ steps from the origin. The general idea behind the algorithm is that search teams will concurrently search different levels, starting from level 0 and making their way outwards. Once a team finishes searching a level, it will move outwards again and explored the next unexplored level.
+Define \textit{level $d$} to be the set of all cells which are exactly $d$ steps from the origin. The general idea behind the algorithm is that search teams will concurrently search different levels, starting from level $1$ and making their way outwards. Once a team finishes searching a level, it will move outwards again and explored the next unexplored level.
 
 In order for this algorithm to work, the agents will have coordinate with each other very carefully. To do this, each agent of a search team is assigned one of five roles: the explorer, or the north, east, south, or west guide.
 
@@ -201,15 +209,15 @@ In fact, we note that all cells at level $d + 1$ will have also been explored, e
 
 Now we need to make sure that the guides use only constant memory. As described above, the guides need to move $d$ steps from the origin before the search at level $d$ can begin. In order to do this using only a constant amount of memory, the guides will make use of guides from other search teams.
 
-The algorithm begins with the first team exploring level 2. At time $t = 0$, the explorer takes a step along the west axis. At time $t = 1$, the explorer takes another step, and all the guides begin walking out along their respective axes. Once the explorer reaches the cell $(-2, 0)$, it takes a step upwards. After this step, the team is in position to begin exploration of level 2, and the explorer proceeds to search the level as described above.
+The \textit{Search Phase} begins with the first team exploring level 2. Their search begins with the explorer walking out along the west axis, directly followed by the west guide. The other guides walk in sync with the west guide, along their respective axes. Once the explorer reaches the point two steps to the left of the origin, it takes a step upwards. After this step, the team is in position to begin exploration of level $2$, and the explorer proceeds to search the level as described above.
 
-While the first team is exploring level 2, at $t = 12$ the second team begins to execute the algorithm. As before, the explorer leads the west guide out along the west axis, and all other guides walk out in sync with the west guide. These agents are not actually aware that they are the second team (they only know that they are not the first team), so we need a strategy to let the agents know when to stop walking outwards and begin exploring a level.
+While the first team is exploring level 2, the second team begins to execute the \textit{Search Phase}. As before, the explorer leads the west guide out along the west axis, and all other guides walk out in sync with the west guide. These agents are not actually aware that they are the second team (they only know that they are not the first team), so we need a strategy to let the agents know when to stop walking outwards and begin exploring a level.
 
 Once the agents leave the origin, they walk until they reach an empty cell an even distance from the origin. This corresponds to the inner-most even level which has yet to be explored. So, once the team reaches this point, they can begin exploration of that level.
 
-All subsequent teams then follow the same pattern. Since we have $\lfloor k/5 \rfloor$ teams, this will result in the first roughly $\lfloor 2k/5 \rfloor$ levels being explored. However, if the treasure still has not been located, we need a way for the agents to continue searching.
+All subsequent teams then follow the same pattern. Since we have $\lfloor k/5 \rfloor$ teams, this will result in the first $\lfloor 2k/5 \rfloor$ levels being explored. However, if the treasure still has not been located, we need a way for the agents to continue searching.
 
-To handle this, we want to make the teams move outwards and find a new level to search once they have finished searching their current level. Consider the first team, right after it finishes searching level 2. Once the team finishes searching, the entire team can move outwards as they had before, again stopping once they find an unoccupied even cell.
+\subsection{Some Name} To handle this, we want to make the teams move outwards and find a new level to search once they have finished searching their current level. Consider the first team, right after it finishes searching level 2. Once the team finishes searching, the entire team can move outwards as they had before, again stopping once they find an unoccupied even cell.
 
 Consider a new team which leaves the origin after the inner-most teams have already moved outwards to start exploring new levels. We wouldn't want this new team to mistakenly search one of the inner levels that has already been searched. As a result, we have the new team walk until it locates another team. After that point, it settles in to search the first even level that no team is currently exploring.
 
@@ -221,13 +229,33 @@ It remains to explain how the guides know when the explorer passes them. For now
 
 \item Their explorer is passing them.
 
+\vspace*{0.5em}
+
+\noindent Only one explorer searches each level, so only one explorer will touch any cell on the axis.
+
+\vspace*{0.5em}
+
 \item The north guide from a new team is passing them.
+
+\vspace*{0.5em}
+
+\noindent No team leaves the origin within twelve steps of another team, so there are at least twelve steps between any two north guides from new teams.
+
+\vspace*{0.5em}
 
 \item The north guide from a team moving outwards to explore a different level is passing them.
 
+\vspace*{0.5em}
+
+\noindent It takes 16 steps to explore level 2 and 32 steps to explore level 4. So, there are at least 16 steps between any two agents that have already searched a level.
+
+\vspace*{0.5em}
+
 \end{enumerate}
 
-Recall that north guides are emitted from the origin every 12 steps. We also know that there will be a large gap between two teams moving outwards to explore a new level, because even if they started exploring at the same time, the inner team would finish many steps sooner. We can utilize these facts to make the north guide ``recognize'' its explorer. If a north guide ever experiences three consecutive time steps where it is not alone, at least one of those time steps must have consisted of the explorer passing.
+From the above reasoning, if there are ever three consecutive time steps where the cell of a north guide waiting for an explorer is occupied by another agent, then it must be that the explorer passed through that cell.
+
+%Recall that north guides are emitted from the origin every 12 steps. We also know that there will be a large gap between two teams moving outwards to explore a new level, because even if they started exploring at the same time, the inner team would finish many steps sooner. We can utilize these facts to make the north guide ``recognize'' its explorer. If a north guide ever experiences three consecutive time steps where it is not alone, at least one of those time steps must have consisted of the explorer passing.
 
 To utilize this fact, whenever the explorer reaches the north guide, it waits there for four time steps (in fact, only three are necessary, but we want to maintain that the explorer takes an even number of steps before it reaches the west guide. We'll see later why this is important). This way, if the north guide is ever not alone for at least four time steps, it knows that its explorer has visited.
 
@@ -240,15 +268,25 @@ The solve this problem, we will ensure that our algorithm maintains the followin
 \begin{inv} During any odd time step, all west guides have an even $x$ coordinate.
 \end{inv}
 
-Recall that at time $12i$, the explorer from team $i$ leaves the origin, and at time $12i + 1$, the guides from team $i$ leave the origin. So, we can clearly see that this invariant holds while the west guides are making their initial move out along the west axis. Any guide waiting for its explorer to search a level is positioned on an even cell, so the invariant is clearly satisfied during the time.
+Recall that the explorer for a team must leave the origin on an even time step, and the west guide from the team leaves the origin in the next time step (which is of course odd). So, we can clearly see that this invariant holds while the west guides are making their initial move out along the west axis. Any guide waiting for its explorer to search a level is positioned on an even cell, so the invariant is clearly satisfied during the time.
 
 It remains to show that a guide moving outwards after its team has already explored a level follows this invariant. We have yet to describe how the west guide and explorer initiate their move outwards after exploring a level.
 
-The tricky thing here is that it is important that the west guide knows exactly when the explorer returns. The north guide, for example, can't tell the difference between an explorer passing directly followed by another north guide, and a north guide passing directly followed by the explorer.
+The tricky thing here is that it is important that the west guide knows exactly when the explorer returns. The north guide, for example, can't tell the difference between an explorer passing directly followed by another north guide, and a north guide passing directly followed by the explorer, but this was not necessary for the north guide.
 
-To rememdy this, we slightly alter the behavior of the west guide. Say that a west guide has just reached its position and the explorer has just left. Then, the explorer and west guide from another team pass by the west guide. At that point, the original west guide should take a step south, so that it sits just below the west axis.
+To remedy this, we first need the following claim.
 
-This won't change anything for any new teams moving out into position, because after the first team is deployed there will always be at least one west guide sitting on the west axis, and so teams will still start searching at the appropriate new levels. Now, the west guide knows when its explorer returns because no other agent could be at that position directly below the west axis.
+\begin{lem}
+Consider some west guide $W$ waiting for its explorer to search a level. Before $W$'s explorer returns, the explorer and west guide from some other team will pass through $W$'s cell.
+\end{lem}
+
+\begin{proof}
+Say that $W$'s team is exploring level $d$. If $d = 2$, then $W$ is on the first team and the claim is true by Assumption 3. Consider the case where $d > 2$. If $W$'s team is exploring level $d$ and no other search team has passed by $W$ yet, then some team must be exploring level $d - 2$. But exploring level $d - 2$ takes 16 steps less than exploring level $d$. So, the team exploring level $d - 2$ will complete their exploration and move outwards before $W$'s explorer returns.
+\end{proof}
+
+Now, with this lemma in mind we modify the behavior of the west guide as follows. When the west guide reaches an empty cell, it stops there and waits as it had before. But now, once the west guide is passed by another team, it takes on step south, so that it sits just below the west axis.
+
+This will not change anything for any new teams moving out into position, because after the first team is deployed there will always be at least one west guide sitting on the west axis, and so teams will still start searching at the appropriate new levels. Now, the west guide knows when its explorer returns because no other agent could be at that position directly below the west axis.
 
 We have already argued that the explorer takes an even number of steps to get back to the west axis. Since the explorer is one step ahead of the west guide walking out along the west axis, it starts its exploration on an even time step. Thus, we know that the time step in which the explorer reaches its west guide below the axis is an odd time step.
 
@@ -256,7 +294,7 @@ In the next time step, we have the explorer move one step to the left, so that i
 
 Due to the invariant, if the guide is not alone at this point, it must be in the cell with another guide. Since explorers and guides always walk one after another, the explorer must also find itself with another explorer. Thus, they can wait two time steps for that team to pass, and then they can follow. Figure 1.2 shows an example where a team finishing its search enounters another team and needs to wait for it to pass.
 
-It's possible that there are two teams walking in a row, in which case they may need to wait four time steps. Either way, they always wait an even number of steps before they begin moving, so they preserve the invariant.
+It's possible that there are multiple teams walking in a row, in which case they may need to wait more than two time steps. Either way, they always wait an even number of steps before they begin moving, so they preserve the invariant.
 
 If the explorer and guide find themselves alone when they return to the west axis, they know that their teammate must be alone as well, so they can begin their westward walk immediately.
 
@@ -373,15 +411,19 @@ With this argument, we can see that the invariant is preserved across all possib
 
 At this point, we have an algorithm which will locate the treasure under the three original assumptions. We will hold off on analyzing the runtime of the algorithm until we have described the entire algorithm. In the following section, we describe how to modify the algorithm so it works even when we lift the assumptions.
 
-\section{Lifting Assumptions}
+\section{Separation Phase}
 
-Now, we describe how to lift our assumptions. First, we describe an addition to the algorithm which allow us to lift assumptions 1 and 3. We will do this by having the agents perform a routine before they begin executing the algorithm described in the previous section. This routine will be broken into two phases. In phase I, agents will essentially line up to enter phase II. In phase II, the agents will determine their roles for the rest of the algorithm.
+In this section, we will describe the \textit{Separation Phase} of the algorithm. This will be the first phase which is performed. At the start of this phase, all agents are located at the origin.
+
+%Now, we describe how to lift our assumptions. First, we describe an addition to the algorithm which allow us to lift assumptions 1 and 3. We will do this by having the agents perform a routine before they begin executing the algorithm described in the previous section. This routine will be broken into two phases. In phase I, agents will essentially line up to enter phase II. In phase II, the agents will determine their roles for the rest of the algorithm.
 
 First, we introduce a new definition. Define the point $(1, 1)$ to be the \textit{center}. Instead of centering our search around the origin, we will center it around the center (soon we will see why this is necessary). We will redefine level $d$ to be the set of points exactly $d$ steps from the center. Since the center is two steps from the origin, this means that we will need to search all the way through level $D + 2$ in order to ensure that the agents have located the treasure.
 
-\subsubsection{Phase I} To begin, in the first time step, we have all agents move one step to the left, to the position (-1, 0). Now, each time step, we have the agents move to the left with probability 1/2 (and otherwise stay in the same cell). Once an agent finds itself alone in a cell, it takes a step to the right every time step until it reaches the origin. For reasons we will see later, we only want an agent returning to the origin at most once every other time step. Thus, during this phase, the agents will move only on even time steps. When an agent returns to the origin, they enter phase II.
+To begin, in the first time step, we have all agents move one step to the left, to the position $(-1, 0)$. Now, each time step, we have the agents move to the left with probability 1/2 (and otherwise stay in the same cell). Once an agent finds itself alone in a cell, it takes a step to the right every time step until it reaches the origin. For reasons we will see later, we only want an agent returning to the origin at most once every other time step. Thus, during this phase, the agents will move only on even time steps. Once an agent has returned to the origin, it has completed the \textit{Separation Phase}, and moves directly into the \textsc{Allocation Phase}.
 
+\section{Allocation Phase}
 
+In this section we describe the \textsc{Allocation Phase}. There are two parts to this phase, \textit{Part A} and \textit{Part B}. Each agent completes either \textit{Part A} or \textit{Part B}. The agent decides which part to execute based on whether it is alone at the origin when it enters the \textit{Allocation Phase}. If it is alone, it begins executing \textit{Part B}. Otherwise, it begins executing \textit{Part A}.
 
 \begin{figure}
 \footnotesize
@@ -408,17 +450,19 @@ First, we introduce a new definition. Define the point $(1, 1)$ to be the \texti
 \caption{}
 \end{figure}
 
-\subsubsection{Phase II} Once the agents get back to the origin (which they can recognize, because this is one of their limited abilities), they follow the path outlined in Figure 2.1. Say that an agent takes the first step past the origin and finds itself alone. This will indicate to the agent that it is going to be a north agent. We want the next four agents that pass to know that they are not meant to be north agents. So, that agent will wait until it has been passed by four other agents. For any agent who passes that square and finds itself not alone, it will know it is not a north agent and continue moving along the path.
+\subsection{Part B} The first few agents to enter the \textit{Allocation Phase} will actually execute \textit{Part A}. However, it is not clear why \textit{Part A} is necessarily until we describe \textit{Part B}, so we describe \textit{Part B} first.
 
-Once the designated north agent has been passed by four agents, it knows that the rest of its team has passed, and begins to walk north. At this point, the north agent behaves exactly like a north agent emitted from the origin in the original algorithm in Section xx.
+Say that an agent enters the \textit{Allocation Phase} and finds that it is not alone at the origin. Then it begins to execute \textit{Part B}. To do so, it follows the path outlined in Figure 2.1. Say that an agent takes the first step past the origin and finds itself alone. This will indicate to the agent that it is going to be a north agent. We want the next four agents that pass to know that they are not meant to be north agents. So, that agent will wait until it has been passed by four other agents. For any agent who passes that square and finds itself not alone, it will know it is not a north agent and continue moving along the path.
 
-The east and south agents are designated the same way. If an agent reaches the cell directly to the right of the center and finds it unoccupied, it knows it will become an east agent and waits for three other agents to pass before moving outwards. If an agent reaches the cell directly south of the center and finds it unoccupied, it knows it will become a south agent and waits for two other agents to pass.
+Once the designated north agent has been passed by four agents, it knows that the rest of its team has passed, and takes a step north. At this point, that agent has completed the \textit{Allocation Phase} and entered the \textit{Search Phase}, so it behaves just like an agent in Section 2 having just left the origin.
 
-The west agent is slightly different. If an agent reaches the cell to the left of the center and finds it unoccupied, it knows it will become the west agent. However, it waits a single time step before moving outwards. This is because of the explorer.
+The east and south agents are designated the same way. If an agent reaches the cell directly to the right of the center and finds it unoccupied, it knows it will become an east agent and waits for three other agents to pass before moving outwards and entering the \textit{Search Phase}. If an agent reaches the cell directly south of the center and finds it unoccupied, it knows it will become a south agent and waits for two other agents to pass before moving south and entering the \textit{Search Phase}.
 
-As soon as an agent reaches the step to the left of the center and finds it occupied, that agent knows it is an explorer, and it takes a step to the left in the next time step. By waiting a single extra time step, the west guide ensures that it does not walk out on top of the explorer, in which case neither could sense if they were in the presence of other agents. Note that because agents only return to the origin every other time step, it is impossible for another agent to encounter a west agent while the agent is waiting that extra time step before moving westwards.
+The west agent is slightly different. If an agent reaches the cell to the left of the center and finds it unoccupied, it knows it will become the west agent. Then, it waits for an agent to pass by it. Instead of entering the \textit{Search Phase} at that time step, it waits one extra time step in the same place, and then moves left and enters the \textit{Search Phase}.
 
-Figure 2.2 shows a sample execution of phase II on five agents. Since phase I involved randomness, we display an execution where we assume that the agents executed phase I in such a way that they end up entering the origin exactly once every other time step.
+As soon as an agent reaches the step to the left of the center and finds it occupied, that agent knows it is an explorer, and it takes a step to the left in the next time step, also entering the \textit{Search Phase}. By waiting a single extra time step, the west guide ensures that it does not walk out on top of the explorer, in which case neither could sense if they were in the presence of other agents. Note that because agents only enter the \textit{Allocation Phase} every other time step, it is impossible for another agent to encounter a west agent while it is waiting that extra time step before entering the \textit{Search Phase}.
+
+Figure 2.2 shows a sample execution of \textit{Part B} on five agents. Since the \textit{Separation Phase} involved randomness, we display an execution where we assume that the agents executed the \textit{Separation Phase} in such a way that they end up entering the \textit{Allocation Phase} exactly once every other time step. Note that the figure displays only even time steps.
 
 
 \begin{figure}
@@ -436,7 +480,7 @@ Figure 2.2 shows a sample execution of phase II on five agents. Since phase I in
 \node(3) at (0.5, 4.5){$C$};
 
 \end{tikzpicture}
-\caption{}
+\caption{$t = 0$}
 \end{subfigure}
 
 \begin{subfigure}[b]{.3\textwidth}
@@ -451,7 +495,7 @@ Figure 2.2 shows a sample execution of phase II on five agents. Since phase I in
 \node(d) at (0.5, 4.5){$D$};
 
 \end{tikzpicture}
-\caption{}
+\caption{$t = 2$}
 \end{subfigure}
 
 
@@ -468,7 +512,7 @@ Figure 2.2 shows a sample execution of phase II on five agents. Since phase I in
 \node(e) at (0.5, 4.5){$E$};
 
 \end{tikzpicture}
-\caption{}
+\caption{$t = 4$}
 \end{subfigure}
 
 
@@ -485,7 +529,7 @@ Figure 2.2 shows a sample execution of phase II on five agents. Since phase I in
 \node(e) at (1.5, 4.5){$E$};
 
 \end{tikzpicture}
-\caption{}
+\caption{$t = 6$}
 \end{subfigure}
 
 
@@ -502,7 +546,7 @@ Figure 2.2 shows a sample execution of phase II on five agents. Since phase I in
 \node(e) at (2.5, 4.5){$E$};
 
 \end{tikzpicture}
-\caption{}
+\caption{$t = 8$}
 \end{subfigure}
 
 
@@ -519,7 +563,7 @@ Figure 2.2 shows a sample execution of phase II on five agents. Since phase I in
 \node(e) at (3.3, 4.3){$E$};
 
 \end{tikzpicture}
-\caption{}
+\caption{$t = 10$}
 \end{subfigure}
 
 
@@ -536,7 +580,7 @@ Figure 2.2 shows a sample execution of phase II on five agents. Since phase I in
 \node(e) at (4.3, 3.3){$E$};
 
 \end{tikzpicture}
-\caption{}
+\caption{$t = 12$}
 \end{subfigure}
 
 \begin{subfigure}[b]{.3\textwidth}
@@ -552,7 +596,7 @@ Figure 2.2 shows a sample execution of phase II on five agents. Since phase I in
 \node(e) at (3.3, 2.3){$E$};
 
 \end{tikzpicture}
-\caption{}
+\caption{$t = 14$}
 \end{subfigure}
 
 
@@ -569,7 +613,7 @@ Figure 2.2 shows a sample execution of phase II on five agents. Since phase I in
 \node(e) at (2.3, 3.3){$E$};
 
 \end{tikzpicture}
-\caption{}
+\caption{$t = 16$}
 \end{subfigure}
 
 
@@ -586,7 +630,7 @@ Figure 2.2 shows a sample execution of phase II on five agents. Since phase I in
 \node(e) at (1.5, 3.5){$E$};
 
 \end{tikzpicture}
-\caption{}
+\caption{$t = 18$}
 \end{subfigure}
 
 
@@ -603,7 +647,7 @@ Figure 2.2 shows a sample execution of phase II on five agents. Since phase I in
 \node(e) at (1.5, 4.5){$E$};
 
 \end{tikzpicture}
-\caption{}
+\caption{$t = 20$}
 \end{subfigure}
 
 
@@ -620,7 +664,7 @@ Figure 2.2 shows a sample execution of phase II on five agents. Since phase I in
 \node(e) at (2.5, 4.5){$E$};
 
 \end{tikzpicture}
-\caption{}
+\caption{$t = 22$}
 \end{subfigure}
 
 \end{multicols}
@@ -628,11 +672,13 @@ Figure 2.2 shows a sample execution of phase II on five agents. Since phase I in
 \caption{TEST}
 \end{figure}
 
-We are left with a final issue of dealing with the fact that currently, we need the agents to know whether they are the first team to leave the origin. In Figure 2.2, we see that the guides all stop exactly two steps from the center, and the explorer begins searching level 2. However, they must know that they are the first team in order to do that. Recall that agents from every subsequent team walk away from the origin until they find an empty even cell \textit{after} having passed by another agent. Of course, the first team cannot do this because they will never encounter another agent and therefore walk on forever.
+At this point, we should note that we have shown that Assumptions 1 and 3 are valid *** MAKE EXTRA ASSUMPTION?? **. Each agent that enters the search team knows its role, and a team member of each role enters the \textit{Search Phase} at least twelve units after the previous.
 
-To handle this, we introduce another phase to the algorithm above, which we'll call phase X. To tell our agents when to enter phase X, we need to modify the end of phase I slightly. If an agent reaches the origin and finds itself alone, it immediately enters phase X (to be described shortly). If an agent enters the origin and is not alone, it immediately enters phase II. 
+We are left with a final issue of dealing with the fact that currently, we need the agents to know whether they are the first team to enter the \textit{Search Phase}. In Figure 2.2, we see that the guides all stop exactly two steps from the center, and the explorer begins searching level 2. However, they must know that they are the first team in order to do that. Recall that agents from every subsequent team walk away from the origin until they find an empty even cell \textit{after} having passed by another agent. Of course, the first team cannot do this because they will never encounter another agent and therefore walk on forever.
 
-Phase X is very similar to phase II. The agents will walk along a predetermined course. If they find themselves alone in certain cells, they will stop and wait there until some condition indicates to them that they can move forward. Figure xx shows that path that agents execute in Phase X. As in Figure xx, the gray cells show the ones in which agents stop in if they find themselves there alone.
+\subsection{Part B} This problem is solved by the introduction of \textit{Part A}. Recall that an agent that has just entered the \textit{Allocation Phase} will begin executing \textit{Part A} if it finds itself alone at the origin. Since no agents from the \textit{Separation Phase} can remain at the origin, the first agent to enter the \textit{Allocation Phase} will immediately enter \textit{Part A}. As we will see, an agent entering \textit{Part A} immediately steps away from the origin. As a result, the next agent to enter the \textit{Allocation Phase} will also be alone at the origin. This process will repeat until some \textit{Part A} agent returns to the origin. At this point, all agents entering the \textit{Allocation Phase} will begin executing \textit{Part B}.
+
+\textit{Part A} is very similar to \textit{Part B}. The agents will walk along a predetermined course. If they find themselves alone in certain cells, they will stop and wait there until some condition indicates to them that they can move forward. Figure xx shows that path that agents execute in \textit{Part A}. As in Figure xx, the gray cells show the ones in which agents stop in if they find themselves there alone.
 
 
 \begin{figure}
@@ -671,21 +717,17 @@ Phase X is very similar to phase II. The agents will walk along a predetermined 
 \caption{}
 \end{figure}
 
-Some agents may complete this path (after passing all five gray cells and finding them occupied) and return to the origin. Once a phase X agent returns to the origin, it remains there for the remainder of the algorithm. As soon as at least one phase X agent return to the origin, all other agents that are still in phase I will enter phase II after reaching the origin.
+If an agent passes by all five gray cells and finds them occupied, then it continues along the path and returns to the origin. After this point, there will always be at least one agent at the origin, so all subsequent agents entering the \textit{Allocation Phase} will execute \textit{Part B}. We will also note that in the worst case (where agents are entering the \textit{Allocation Phase} every other time step), there can be at most $13$ agents which begin executing \textit{part A} before one of them returns to the origin. This means at most $8$ agents will return to the origin. Note that any agent who executes \textit{Part A} and returns to the origin will never leave the origin again.
 
-At most 13 agents can ever enter phase X by the time one of those agents returns to the origin and agents start to enter phase II. As we will see, the five agents stopped in the gray spots will later form a search team, so this means that there will be at most 8 agents who return to the origin and never leave again.
+Now, when an agent enters \textit{Part B}, it can just assume that it is not on the first team. This is because the \textit{Part A} agents will still be positioned in their gray spots, and so even the first \textit{Part B} team will pass by them and know that they can search the next unoccupied level.
 
-Now, when a team enters phase II, it can just assume that it is not the first team. This is because all phase X agents will still be positioned in their gray spots, and so even the first team will pass by them and know that they can search the next unoccupied level.
+The problem is once the agents start completing their levels and moving outwards. If there are still agents in \textit{Separation} and \textit{Allocation Phases} at that time, we do not want them to re-search early levels after seeing the \textit{Part A} agents positioned at level 2.
 
-The problem is once the agents start completing their levels and moving outwards. If there are still agents in phases I and II at that time, we do not want them to re-search early levels after seeing phase X agents. So, we actually just want the phase X agents to be in position until at least one team has passed them.
+The real purpose of the \textit{Part A} team is to ensure that the first \textit{Part B} team does not wander away. So, once that team has passed, we can have the \textit{A} agents enter the \textit{Search Phase}. It remains to show how the \textit{Part A} agents know the difference between the first search team passing by them, and just another \textit{Part A} agent making its way around. To resolve this, we note that agents only enter \textit{Part A} every other step.
 
-We remedy this as follows. When the first phase II team begins to move outwards, it will counter agents at level 2. Only phase X agents will ever be stopped there, so it will know the agents are phase X agents. The phase II agents will then wait in the cells with the phase II agents for an extra time step before proceeding.
+When the first search team begins to move outwards, it will encounter agents at level 2. Only \textit{Part A} agents will ever be stopped there, so it will know the agents are \textit{Part A} agents. The new search team will then wait in the cells with the \textit{Part A} agents for an extra time step before proceeding. This will signal to the \textit{Part A} agents that they have been passed by a search team. After that search team steps away, the \textit{Part A} agents can enter the \textit{Search Phase}, with their roles determined by their positions.
 
-A phase X agent will never find its cell occupied for more than one time step in a row until this point, because agents can only enter phase X every other time step. As a result, this will signal to the phase X agents that they can abandon their posts and begin searching themselves.
-
-The first team out of phase II will step and begin searching level 4. Once the phase X team has received notification this this has happened, they can move outwards and begin searching level 6. At this point, that team will behave exactly like a normal search team.
-
-Note that all level 1, 2, and 3 cells are either searched by phase II or phase X agents, or lie on an axis and are searched by guides, so there's no need to ever have a team explore these levels. We have to be careful because no agent ever actually explores the center. To remedy this, we just have all the agents move to the center and back to the origin before beginning phase I.
+Note that all level 1, 2, and 3 cells are searched by \textit{Allocation Phase} agents except for the level 3 cells on the axes. Since these will be search by guides in the \textit{Search Phase}, there is no need to ever have a team explore these levels. We have to be careful because no agent ever actually explores the center. To fix this, we just have all the agents move to the center and back to the origin before beginning the \textit{Separation Phase}.
 
 \section{Analysis}
 
@@ -694,19 +736,19 @@ Note that all level 1, 2, and 3 cells are either searched by phase II or phase X
 \end{thm}
 
 \begin{proof}
-First, we need to analyze the rate at which agents complete Phase I. To do so, we use the following lemma.
+First, we need to analyze the rate at which agents complete the \textit{Separation Phase}. To do so, we use the following lemma.
 
 \begin{lem}
-After $O(t + \log{k})$ time steps, at least $t$ agents have completed phase I with high probability.
+After $O(t + \log{k})$ time steps, at least $t$ agents have completed the \textit{Separation Phase} with high probability.
 \end{lem}
 
 \begin{proof}
 Still need to work this out exactly. The general idea is that is takes $O(\log{k})$ steps for one of the agents to become alone, and after that happens we expect roughly one agent to become alone every time step. Very roughly.
 \end{proof}
 
-Next, we assess the time until one of the Phase X agents return to the origin (which marks the point at which Phase I agents start moving into Phase II). As we've stated before, at most 13 agents can enter Phase X before one of them winds up back at the origin. Once the last agent enters phase X, it will take at most a constant number of steps before some phase X agent reaches the origin. Thus, by Lemma xx, we expect this to happen in $O(\log{k})$.
+%Next, we assess the time until one of the Phase X agents return to the origin (which marks the point at which Phase I agents start moving into Phase II). As we've stated before, at most 13 agents can enter Phase X before one of them winds up back at the origin. Once the last agent enters phase X, it will take at most a constant number of steps before some phase X agent reaches the origin. Thus, by Lemma xx, we expect this to happen in $O(\log{k})$.
 
-Define team $0$ to be the team which is formed in \textit{Phase X}, and define team $i$ to be the $i^{th}$ team formed in phase \textit{II}. Next, we will define team $j$ to be the last team which exits \textit{Phase I}. Since the agents move in synchrony, the runtime of the algorithm is equal to the number of steps before team $j$ stops searching.
+Define team $0$ to be the team which is formed in \textit{Part A}, and define team $i$ to be the $i^{th}$ team formed in phase \textit{B}. Next, we will define team $j$ to be the last team to enter the \textit{Search Phase}. Since the agents move in synchrony, the runtime of the algorithm is equal to the number of steps taken by team $j$.
 
 \begin{lem} We must have that $j = O(D)$.
 \end{lem}
@@ -715,7 +757,7 @@ Define team $0$ to be the team which is formed in \textit{Phase X}, and define t
 Even if each team only explored a single level, the $D/2^{th}$ team would end up exploring level $D$. After $O(D)$ time steps, that team would complete exploration of level $D$ and the algorithm would terminate. Since at most one team can start per time step, this leads to $j = O(D)$. 
 \end{proof}
 
-Let $m$ be the maximum number of possible teams that can be formed from the $k$ agents. Recall that at least $1$ and at most $8$ agents will complete \textit{Phase X} and then return to the origin to never leave again. So, we have that $\lfloor (k - 8)/5 \rfloor \leq m \leq \lfloor (k - 1)/5 \rfloor$, and $m = \Theta(k)$.
+Let $m$ be the maximum number of possible teams that can be formed from the $k$ agents. Recall that at least $1$ and at most $8$ agents will complete \textit{Part A} and then return to the origin to never leave again. So, we have that $\lfloor (k - 8)/5 \rfloor \leq m \leq \lfloor (k - 1)/5 \rfloor$, and $m = \Theta(k)$.
 
 We analyze two cases. In the first case, $j = m$. This corresponds to the case where $D$ is large compared to $k$, so all possible teams are deployed and join the search before the treasure is found. In the second case, $j < m$. This corresponds to the case where $D$ is small compared to $k$, so the treasure is located before all the teams are deployed.
 
@@ -723,16 +765,16 @@ We analyze two cases. In the first case, $j = m$. This corresponds to the case w
 \end{lem}
 
 \begin{proof}
-This means that $D$ was large enough such that all the agents completed \textit{Phase I} and participated in the search. By Lemma xx, it takes $O(k + \log{k}) = O(k)$ with high probability before team $k/5$ completes \textit{Phase I}. After that, the team moves out to find the first unexplored level. Say that the first unexplored level it finds is level $f_j$.
+This means that $D$ was large enough such that all the agents completed the \textit{Separation} and \textit{Search Phases} and participated in the \textit{Search Phase}. By Lemma xx, it takes $O(k + \log{k}) = O(k)$ time steps with high probability before team $m$ completes the \textit{Separation Phase}. Note at after the final agent on a team completes \textit{Separation Phase}, it only takes a constant number of steps before that team moves on to the \textit{Search Phase}.
 
-Once there, the team explores that level. Recall that it takes $O(d)$ steps to explore level $d$. So, in $O(f_j)$ steps, the team explores level $f_j$. Next, they move out and explore the next unexplored level, which will be level $f_j + 2m$. After exploring that level, they'll move out and explore level $f_j + 4m$. This process can repeat at most $D/2m$ times. So, the total amount of work is given by the following sum.
+When a team enters the \textit{Search Phase}, it moves out to find the first unexplored level. Say that this is level $f$. Once there, the team explores that level. Recall that it takes $O(d)$ steps to explore level $d$. So, in $O(f)$ steps, the team explores level $f$. Next, they move out and explore the next unexplored level, which will be level $f + 2m$. After exploring that level, they will move out and explore level $f + 4m$. This process can repeat at most $D/2m$ times. So, the total amount of work is given by the following sum.
 
-\[f_j + \sum_{z = 0}^{D/(2m)} O(f_j + z \cdot (2m)) + m\]
-\[= f_j + O \left (\sum_{z = 0}^{D/k} f_j + zk \right )\]
-\[= f_j + O \left (\sum_{z = 0}^{D/k} f_j + k\sum_{z = 0}^{D/k} z \right ) \]
-\[= f_j + O((D/k)\cdot f_j + D^2/k)\]
+\[f + \sum_{z = 0}^{D/(2m)} O(f + z \cdot (2m)) + m\]
+\[= f + O \left (\sum_{z = 0}^{D/k} f + zk \right )\]
+\[= f + O \left (\sum_{z = 0}^{D/k} f + k\sum_{z = 0}^{D/k} z \right ) \]
+\[= f + O((D/k)\cdot f + D^2/k)\]
 
-To simplify this further, we claim that $f_j = O(D)$. To see why, we note that if $f_j > D$, then it means that by the time that team $j$ starts its search, some other team is already searching level $D$. That team will complete its search within $O(D)$ steps of the time when team $j$ begins its search, so team $j$ cannot possibly start a search further than $O(D)$ steps from the origin. With this in mind, the above sum simplifies to
+To simplify this further, we claim that $f = O(D)$. To see why, we note that if $f > D$, then it means that by the time that team $j$ starts its search, some other team is already searching level $D$. That team will complete its search within $O(D)$ steps of the time when team $j$ begins its search, so team $j$ cannot possibly start a search further than $O(D)$ steps from the origin. With this in mind, the above sum simplifies to
 
 \[= O(D + D^2/k + D^2/k) = O(D + D^2/k)\]
 
@@ -745,9 +787,9 @@ By Lemma xx, $k = O(D)$, so we have that the overall runtime is given by $O(D + 
 \end{lem}
 
 \begin{proof}
-This means that not all teams completed \textit{Phase I} by the time that some team located the treasure.
+This means that not all teams completed the \textit{Separation} and \textit{Allocation Phases} by the time that some team located the treasure.
 
-We know that team $j + 1$ never completes \textit{Phase I}, because the algorithm terminates before this. By Lemma xx, this team would have completed \textit{Phase I} in $O(j + \log{k})$ time steps with high probability. Thus, the algorithm completes in $O(j + \log{k})$ with high proability. Then by Lemma xx, the algorithm completes in $O(D + \log{k})$ with high probability.
+We know that team $j + 1$ never completes the \textit{Allocation Phase}, because the algorithm terminates before this. By Lemma xx, this team would have completed the \textit{Separation Phase} in $O(j + \log{k})$ time steps with high probability. Since the \textit{Allocation Phase} only involves a constant number of steps after the final agent of the team enters that phase, this means that team $j + 1$ also would have completed the \textit{Allocation Phase} in $O(j + \log{k})$. Thus, the algorithm completes in $O(j + \log{k})$ with high proability. Then by Lemma xx, the algorithm completes in $O(D + \log{k})$ with high probability.
 \end{proof}
 
 Combining Lemmas xx and xx, we have that the algorithm terminates in $O(D + D^2/k + \log{k})$ with high probability.
