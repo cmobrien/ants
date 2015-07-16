@@ -1,0 +1,279 @@
+body {
+  overflow-x:hidden;
+  overflow-y:hidden;
+  margin: 0px;
+  font-family: 'Open Sans', sans-serif;
+  color:white;
+
+  -webkit-user-select: none;      
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+table {
+  border-spacing: 2px;
+  position:absolute;
+  left: 154px;
+}
+
+.cover {
+  position:absolute;
+  background-color:white;
+  z-index:999;
+}
+
+#controls {
+  background-color: rgb(50, 50, 50);
+  border-radius: 5px;
+  margin: 2px;
+  z-index:99999;
+  position:absolute;
+  overflow-y:scroll;
+}
+
+.cell {
+  padding: 0px;
+  margin:0px;
+  background-color: #E3F2FD;
+  border-radius:5px;
+  text-align: center;
+  width: 30px;
+  height: 30px;
+}
+
+.explored {
+  background-color: #BBDEFB;
+  background-color:#64B5F6;
+  background-color:#90CAF9;
+}
+
+img {
+  position: absolute;
+  width:18px;
+  height:18px;
+}
+
+#key img {
+  width: 12px;
+  height: 12px;
+  left: 19px;
+}
+
+.single_icon {
+  top: 476px;
+}
+
+.multiple_icon {
+  top: 501px;
+  -webkit-filter:
+    drop-shadow(1px 1px 0 #448AFF)
+    drop-shadow(-1px 1px 0 #448AFF)
+    drop-shadow(1px -1px 0 #448AFF)
+    drop-shadow(-1px -1px 0  #448AFF);
+  filter:
+    drop-shadow(1px 1px 0 #448AFF)
+    drop-shadow(-1px 1px 0 #448AFF)
+    drop-shadow(1px -1px 0 #448AFF)
+    drop-shadow(-1px -1px 0 #448AFF);
+}
+
+.white {
+  background-color:white;
+}
+
+#key {
+  margin: 15px 0px 15px 15px;
+}
+
+.num {
+  background-color:white;
+  color:red;
+  font-family: 'Open Sans', sans-serif;
+  width: 15px;
+  font-size: 11px;
+  height: 15px;
+  border-radius: 8px;
+  position: absolute;
+  top: 3;
+  left: 22;
+
+}
+
+.origin {
+  background-color:rgb(98, 130, 154);
+  background-color:#1976D2;
+  background-color:#1565C0;
+}
+
+.multiple {
+  -webkit-filter:
+    drop-shadow(1px 1px 0 #448AFF)
+    drop-shadow(-1px 1px 0 #448AFF)
+    drop-shadow(1px -1px 0 #448AFF)
+    drop-shadow(-1px -1px 0  #448AFF);
+  filter:
+    drop-shadow(1px 1px 0 #448AFF)
+    drop-shadow(-1px 1px 0 #448AFF)
+    drop-shadow(1px -1px 0 #448AFF)
+    drop-shadow(-1px -1px 0 #448AFF);
+}
+
+.button {
+  width:40px;
+  border-radius:5px;
+  padding: 5px;
+  font-size: 10px;
+  text-align:center;
+  color:white;
+  background-color: rgb(150, 150, 150);
+  display:inline-block;
+  margin-left:15px;
+  margin-top:15px;
+  cursor:pointer;
+}
+
+.button:hover {
+  background-color: rgb(200, 200, 200);
+}
+
+#round_number {
+  margin-left:15px;
+  margin-top:15px;
+}
+
+.slider {
+  margin: 0px 15px 0px 15px;
+}
+
+.ui-slider-horizontal {
+  height: 2px !important;
+
+}
+
+.ui-slider .ui-slider-handle {
+
+  cursor: default;
+  height: 10px !important;
+  position: absolute;
+  width: 10px !important;
+  z-index: 2;
+  padding-left:10px;
+}
+
+.ui-state-focus {
+  outline: 0 none !important;
+}
+
+
+.slider_label {
+  font-size:12px;
+  margin:30px 0px 5px 15px;
+  position:relative;
+}
+
+.key {
+  font-size:10px;
+  margin-left:5px;
+  vertical-align:text-top;
+}
+
+.key_icon {
+  display: inline-block;
+  margin-top: 5px;
+  width: 20px;
+  height: 20px;
+}
+
+.algorithm_label {
+margin-left:11px;
+}
+
+.speed_label {
+  font-size:10px;
+  margin: 5px 15px;
+}
+
+#slow {
+  float:left;
+}
+
+#fast {
+  float:right;
+}
+
+#message {
+  font-size:10px;
+  margin: 15px 0px 0px 15px;
+  font-style:italic;
+  color: rgb(50, 50, 50);
+}
+
+select:focus {
+  outline:none;
+}
+
+form {
+  margin-left:15px;
+  padding-left:0px;
+}
+
+input {
+  padding-left:0px;
+  margin-left:0px;
+}
+
+#label_container {
+  position:relative;
+  margin-bottom:40px;
+}
+
+#play_cover {
+  background-color: rgba(0, 0, 0, 0.5);
+  width: 50px;
+  height: 44px;
+  position:absolute;
+  left: 15px;
+  border-radius:5px;
+  top: 52px;
+  z-index: 999;
+}
+
+#pause_cover {
+  background-color: rgba(0, 0, 0, 0.5);
+  width: 50px;
+  height: 44px;
+  position:absolute;
+  left: 84px;
+  border-radius:5px;
+  top: 52px;
+  z-index: 999;
+}
+
+#step_cover {
+  background-color: rgba(0, 0, 0, 0.5);
+  width: 50px;
+  height: 44px;
+  position:absolute;
+  left: 15px;
+  border-radius:5px;
+  top: 111px;
+  z-index: 999;
+}
+
+#restart_cover {
+  background-color: rgba(0, 0, 0, 0.5);
+  width: 50px;
+  height: 44px;
+  position:absolute;
+  left: 84px;
+  border-radius:5px;
+  top: 111px;
+  z-index: 999;
+}
+
+.test {
+width: 250px;
+height: 250px;
+border: 10px solid red;
+}
