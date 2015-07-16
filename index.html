@@ -1,0 +1,88 @@
+<head>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <script src="js.js"></script>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+</head>
+<body>
+  <div id = "cover_right" class = "cover"></div>
+  <div id = "cover_left" class = "cover"></div>
+  <div id = "cover_top" class = "cover"></div>
+  <div id = "cover_bottom" class = "cover"></div>
+
+  <div id = "container">
+    <div id = "controls">
+      <div id = "round_number">ROUND <span id = "number">0</span></div>
+      <div id = "play_cover"></div>
+      <div id = "play" class = "button">
+        <div class="fa fa-play fa-2x"></div></br>
+        PLAY
+      </div>
+      <div id = "pause_cover"></div>
+      <div id = "pause" class = "button">
+        <div class="fa fa-pause fa-2x"></div></br>
+        PAUSE
+      </div>
+      <div id = "step_cover"></div>
+      <div id = "step" class = "button">
+        <div class="fa fa-step-forward fa-2x"></div></br>
+        STEP
+      </div>
+      <div id = "restart_cover"></div>
+      <div id = "restart" class = "button">
+        <div class="fa fa-repeat fa-2x"></div></br>
+        RESTART
+      </div>
+      
+      <div>
+        <div class = "slider_label">SPEED</div>
+        <div id = "speed_slider" class = "slider"></div>
+        <div id = "label_container">
+          <div id = "slow" class = "speed_label">SLOW</div>
+          <div id = "fast" class = "speed_label">FAST</div>
+        </div>
+      </div>
+      <div>
+        <div class = "slider_label">AGENTS: <span id = "number_agents">50</span></div>
+        <div id = "agents_slider" class = "slider"></div>
+
+      </div>
+
+      <div class = "slider_label">ALGORITHM</div>
+      <form class = "algorithm_label">
+        <select name = "algorithm">
+          <option>Hybrid-Search</option>
+          <option>Rectangle-Search</option>
+          <option>Geometric-Search</option>
+        </select>
+      </form>
+        
+      <div id = "message">Restart to apply changes</div>
+
+
+
+      <div id = "key">
+        <div class = "cell key_icon"></div><span class = "key">Unexplored Cell</span></br>
+        <div class = "cell explored key_icon"></div><span class = "key">Explored Cell</span></br>
+        <div class = "cell origin key_icon"></div><span class = "key">Origin</span></br>
+        <div class = "cell white key_icon">
+          <img class = "single_icon" src = "http://icons.iconarchive.com/icons/icons8/windows-8/512/Animals-Ant-icon.png">
+          </img>
+        </div><span class = "key">Single Agent</span></br>
+        <div class = "cell white key_icon">
+          <img class = "multiple_icon" src = "http://icons.iconarchive.com/icons/icons8/windows-8/512/Animals-Ant-icon.png">
+          </img>
+        </div><span class = "key">Multiple Agents</span>
+    </div>
+
+    </div>
+
+
+    <table id = "cells">
+    </table>
+  </div>
+
+</body>
